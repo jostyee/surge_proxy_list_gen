@@ -42,6 +42,9 @@ func main() {
 	defer resp.Body.Close()
 
 	res, err := groupProxies(resp.Body, strings.Split(*regions, ","))
+	if err != nil {
+		log.Panic(err)
+	}
 
 	if err = writeProxyFiles(*path, res); err != nil {
 		log.Panic(err)
