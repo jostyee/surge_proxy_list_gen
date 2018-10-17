@@ -10,12 +10,14 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/cloudflare/ahocorasick"
 )
 
 func main() {
 	url := flag.String("url", "", "remote proxy url")
 	regions := flag.String("regions", "", "regions, separated with comma")
-	path := flag.String("path", "/Users/yee/Library/Mobile Documents/iCloud~run~surge/Documents/", "local file path")
+	path := flag.String("path", "./", "local file path")
 	flag.Parse()
 
 	if "" == *url {
@@ -41,8 +43,6 @@ func main() {
 
 	res, err := groupProxies(resp.Body, strings.Split(*regions, ","))
 
-	// log.Printf("%+v", res)
-
 	if err = writeProxyFiles(*path, res); err != nil {
 		log.Panic(err)
 	}
@@ -50,17 +50,16 @@ func main() {
 
 func groupProxies(r io.Reader, g []string) (map[string][]string, error) {
 	res := make(map[string][]string)
+	m := ahocorasick.NewStringMatcher(g)
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		l := scanner.Text()
-		for _, key := range g {
-			// log.Printf("%+v", res[key])
-			if strings.Contains(l, key) {
-				log.Printf("current key:%s, matched line: %s\n", key, l)
-				res[key] = append(res[key], l)
-				break
-			}
+		hits := m.Match([]byte(l))
+		if len(hits) != 0 {
+			key := g[hits[0]]
+			log.Printf("matched key:%s, line:%s\n", key, l)
+			res[key] = append(res[key], l)
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -71,6 +70,10 @@ func groupProxies(r io.Reader, g []string) (map[string][]string, error) {
 }
 
 func writeProxyFiles(path string, m map[string][]string) error {
+	if len(m) == 0 {
+		return nil
+	}
+
 	for k, v := range m {
 		filename := path + k + ".list"
 		if _, err := os.Stat(filename); err == nil {
@@ -93,8 +96,7 @@ func writeProxyFiles(path string, m map[string][]string) error {
 
 		w := bufio.NewWriter(f)
 		for _, l := range v {
-			w.WriteString(l)
-			w.WriteString("\n")
+			w.WriteString(l + "\n")
 		}
 		w.Flush()
 	}
