@@ -18,4 +18,6 @@ go get -u -v github.com/jostyee/surge_proxy_list_gen
 go run main.go -url='$remote_proxies_list' -regions='[SS] 香港,[SS] 日本,[SS] 美国,[SS] 俄罗斯' -path='$surge_icloud_drive_directory'
 ```
 
+执行完成后会在指定目录下生成对应的文件（'[SS] 香港.list'/'[SS] 日本.list'...）
+
 [^surge]: https://nssurge.zendesk.com/hc/zh-cn/articles/360010038714
